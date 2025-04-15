@@ -76,4 +76,43 @@ router.post("/user/details", async (req, res) => {
     }
 });
 
+//  ADD THIS NEW ENDPOINT FOR DELETE BOOKING
+router.delete("/user/delete", async (req, res) => {
+    const { userId, slotNumber, date, entryTime, exitTime } = req.body;
+
+    try {
+        // Find the correct parking slot
+        const slot = await ParkingSlot.findOne({ slotNumber });
+
+        if (!slot) {
+            return res.status(404).json({ message: "Slot not found." });
+        }
+
+        // Filter out the booking to delete
+        const updatedBookings = slot.bookings.filter(
+            booking => !(
+                booking.userId === userId &&
+                booking.date === date &&
+                booking.entryTime === entryTime &&
+                booking.exitTime === exitTime
+            )
+        );
+
+        // If no booking was removed, it means nothing matched
+        if (updatedBookings.length === slot.bookings.length) {
+            return res.status(404).json({ message: "Booking not found for deletion." });
+        }
+
+        // Update the bookings array
+        slot.bookings = updatedBookings;
+        await slot.save();
+
+        return res.json({ message: "Booking deleted successfully." });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Error deleting booking", error });
+    }
+});
+//  DELETE ENDPOINT ENDS HERE
+
 export default router;
